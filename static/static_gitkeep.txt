@@ -1,0 +1,2 @@
+# This file ensures the static directories are tracked by Git
+# The actual invoice PDFs and QR codes will be ignored via .gitignore

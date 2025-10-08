@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # API Service
+  api:
+    build: .
+    container_name: invoice_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://invoice_user:invoice_pass@db:5432/invoice_db
+      - SECRET_KEY=${SECRET_KEY}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USERNAME=${EMAIL_USERNAME}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+    volumes:
+      - ./static:/app/static
+      - ./app:/app/app
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - invoice_network
+
+  # PostgreSQL Database (optional - can use SQLite for MVP)
+  db:
+    image: postgres:15-alpine
+    container_name: invoice_db
+    environment:
+      - POSTGRES_USER=invoice_user
+      - POSTGRES_PASSWORD=invoice_pass
+      - POSTGRES_DB=invoice_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - invoice_network
+
+volumes:
+  postgres_data:
+
+networks:
+  invoice_network:
+    driver: bridge

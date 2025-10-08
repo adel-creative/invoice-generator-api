@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فاتورة {{ invoice_number }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header .invoice-number {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            gap: 30px;
+        }
+        
+        .info-box {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-right: 4px solid #667eea;
+        }
+        
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .info-box p {
+            margin: 8px 0;
+            color: #666;
+        }
+        
+        .info-box strong {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        thead {
+            background: #667eea;
+            color: white;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            text-align: right;
+        }
+        
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .totals {
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .totals table {
+            width: 350px;
+            margin-right: auto;
+            box-shadow: none;
+        }
+        
+        .totals td {
+            padding: 12px 15px;
+        }
+        
+        .totals .label {
+            font-weight: 600;
+            color: #666;
+            text-align: right;
+        }
+        
+        .totals .amount {
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .total-row {
+            background: #667eea !important;
+            color: white !important;
+            font-size: 18px;
+        }
+        
+        .total-row td {
+            border-bottom: none !important;
+            font-weight: 700;
+        }
+        
+        .notes {
+            background: #fff3cd;
+            border-right: 4px solid #ffc107;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        
+        .notes h4 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .notes p {
+            color: #856404;
+            line-height: 1.8;
+        }
+        
+        .qr-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .qr-section img {
+            max-width: 200px;
+            margin: 20px 0;
+        }
+        
+        .payment-link {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #e9ecef;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        @media print {
+            .container {
+                padding: 20px;
+            }
+            
+            .payment-link {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🧾 فاتورة</h1>
+            <div class="invoice-number">رقم الفاتورة: {{ invoice_number }}</div>
+        </div>
+        
+        <!-- Info Section -->
+        <div class="info-section">
+            <!-- Seller Info -->
+            <div class="info-box">
+                <h3>📤 من</h3>
+                <p><strong>{{ seller_name }}</strong></p>
+                {% if seller_email %}<p>✉️ {{ seller_email }}</p>{% endif %}
+                {% if seller_phone %}<p>📞 {{ seller_phone }}</p>{% endif %}
+                {% if seller_address %}<p>📍 {{ seller_address }}</p>{% endif %}
+            </div>
+            
+            <!-- Client Info -->
+            <div class="info-box">
+                <h3>📥 إلى</h3>
+                <p><strong>{{ client_name }}</strong></p>
+                {% if client_email %}<p>✉️ {{ client_email }}</p>{% endif %}
+                {% if client_phone %}<p>📞 {{ client_phone }}</p>{% endif %}
+                {% if client_address %}<p>📍 {{ client_address }}</p>{% endif %}
+            </div>
+            
+            <!-- Dates -->
+            <div class="info-box">
+                <h3>📅 التواريخ</h3>
+                <p><strong>تاريخ الإصدار:</strong><br>{{ issue_date }}</p>
+                {% if due_date %}
+                <p><strong>تاريخ الاستحقاق:</strong><br>{{ due_date }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Items Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th>البند</th>
+                    <th>الكمية</th>
+                    <th>السعر</th>
+                    <th>الإجمالي</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <strong>{{ item.name }}</strong>
+                        {% if item.description %}
+                        <br><small style="color: #666;">{{ item.description }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.price }} {{ currency }}</td>
+                    <td><strong>{{ item.total }} {{ currency }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Totals -->
+        <div class="totals">
+            <table>
+                <tr>
+                    <td class="label">المجموع الفرعي:</td>
+                    <td class="amount">{{ subtotal }} {{ currency }}</td>
+                </tr>
+                
+                {% if discount_amount > 0 %}
+                <tr>
+                    <td class="label">الخصم ({{ discount_rate }}%):</td>
+                    <td class="amount" style="color: #28a745;">- {{ discount_amount }} {{ currency }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if tax_amount > 0 %}
+                <tr>
+                    <td class="label">الضريبة ({{ tax_rate }}%):</td>
+                    <td class="amount">{{ tax_amount }} {{ currency }}</td>
+                </tr>
+                {% endif %}
+                
+                <tr class="total-row">
+                    <td>المجموع الإجمالي:</td>
+                    <td>{{ total }} {{ currency }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Notes -->
+        {% if notes %}
+        <div class="notes">
+            <h4>📝 ملاحظات:</h4>
+            <p>{{ notes }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- QR Code & Payment -->
+        {% if qr_code_path or payment_link %}
+        <div class="qr-section">
+            <h3 style="color: #667eea; margin-bottom: 15px;">💳 الدفع</h3>
+            {% if qr_code_path %}
+            <img src="{{ qr_code_path }}" alt="QR Code">
+            <p style="color: #666; margin: 10px 0;">امسح الكود للدفع</p>
+            {% endif %}
+            {% if payment_link %}
+            <a href="{{ payment_link }}" class="payment-link">ادفع الآن</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>تم إنشاء هذه الفاتورة تلقائياً بتاريخ {{ generated_date }}</p>
+            <p>شكراً لتعاملكم معنا 🙏</p>
+        </div>
+    </div>
+</body>
+</html>

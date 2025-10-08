@@ -1,0 +1,33 @@
+# تجاهل مجلدات Node
+node_modules
+npm-debug.log
+
+# تجاهل مجلد البناء السابق
+dist
+
+# تجاهل ملفات Git
+.git
+.gitignore
+
+# تجاهل ملفات البيئة (يجب إضافتها في Koyeb Dashboard)
+.env
+.env.local
+.env.production
+
+# تجاهل ملفات السجلات
+*.log
+logs
+
+# تجاهل ملفات التطوير
+.vscode
+.idea
+*.swp
+*.swo
+
+# تجاهل ملفات الاختبار
+coverage
+.nyc_output
+
+# تجاهل ملفات مؤقتة
+tmp
+temp
