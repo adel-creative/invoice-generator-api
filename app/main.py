@@ -62,262 +62,141 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 logger.addHandler(error_handler)
 
-# Create FastAPI app with comprehensive documentation
+# Build description without .format() to avoid KeyError
+BASE_URL = settings.BASE_URL
+API_DESCRIPTION = """
+🧾 **Arabic Invoice Generator API**
+
+Professional bilingual invoice generator for freelancers and businesses in the MENA region.
+
+## 🚀 Quick Start Guide
+
+### Step 1: Register Your Account
+POST /auth/register - Create your account with email, username, and password.
+
+### Step 2: Login & Get Token
+POST /auth/login - Get your JWT access token (valid for 30 minutes).
+
+### Step 3: Authorize
+Click the 🔓 **Authorize** button above and paste your token.
+
+### Step 4: Create Invoice
+POST /invoices/generate - Generate your first invoice with PDF and QR code!
+
+### Step 5: Send to Client
+POST /invoices/[invoice_id]/send-email - Send the invoice via email with PDF attachment.
+
+---
+
+## 📚 Key Features
+
+### 📄 Bilingual PDF Generation
+- **Arabic (RTL)**: Native right-to-left support with Cairo font
+- **English (LTR)**: Professional left-to-right layout
+- Modern gradient design with company branding
+- Print-ready A4 format
+
+### 📧 Email Integration
+- Send invoices directly to clients
+- Professional HTML email templates
+- PDF attachments included
+- Rate limited: 5 emails/hour per user
+
+### 💳 Payment Features
+- Unique payment links per user
+- QR codes for easy scanning
+- Multiple currency support
+- Ready for payment gateway integration
+
+### 🔐 Security
+- JWT-based authentication
+- Password hashing with bcrypt
+- Input validation with Pydantic
+- CORS protection
+- SQL injection prevention
+- Security headers (HSTS, CSP, X-Frame-Options)
+
+### 💰 Multi-Currency Support
+Supported currencies: MAD, USD, EUR, SAR, AED, GBP, EGP
+
+---
+
+## 🔑 Authentication
+
+All endpoints (except /auth/*, /health, /) require authentication.
+
+**Header Format:**
+Authorization: Bearer YOUR_JWT_TOKEN
+
+**Token Lifetime:** 30 minutes
+
+**To get a token:**
+1. Register at /auth/register
+2. Login at /auth/login
+3. Copy the access_token from response
+4. Click 🔓 Authorize button
+5. Paste token and click Authorize
+
+---
+
+## ⚠️ Rate Limits
+
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| Email Sending | 5 requests | per hour per user |
+| Other Endpoints | No limit | (MVP) |
+
+**429 Error**: If you exceed rate limits, wait 1 hour before retrying.
+
+---
+
+## 💰 Pricing Tiers (Suggested)
+
+| Tier | Invoices/Month | Price/Month | Email Limit |
+|------|----------------|-------------|-------------|
+| **Free** | 10 | $0 | 5/day |
+| **Starter** | 100 | $9.99 | 50/day |
+| **Professional** | 500 | $29.99 | 200/day |
+| **Business** | 2,000 | $79.99 | Unlimited |
+| **Enterprise** | Unlimited | Custom | Unlimited |
+
+---
+
+## 🐛 Common Error Codes
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| **401** | Unauthorized | Check your token, login again if expired |
+| **403** | Forbidden | Your account might be inactive |
+| **404** | Not Found | Invoice/resource doesn't exist |
+| **422** | Validation Error | Check your request body format |
+| **429** | Too Many Requests | Wait before sending more emails |
+| **500** | Server Error | Contact support if persists |
+| **503** | Service Unavailable | Database connection issue |
+
+---
+
+## 📖 Additional Resources
+
+- **Full API Documentation**: See endpoints below
+- **Support Email**: adelzidoune@gmail.com
+
+---
+
+**Made with ❤️ for freelancers and small businesses**
+
+*Happy invoicing! 🚀*
+"""
+
+# Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="""
-    🧾 **Arabic Invoice Generator API**
-    
-    Professional bilingual invoice generator for freelancers and businesses in the MENA region.
-    
-    ## 🚀 Quick Start Guide
-    
-    ### Step 1: Register Your Account
-    ```bash
-    POST /auth/register
-    ```
-    Create your account with email, username, and password.
-    
-    ### Step 2: Login & Get Token
-    ```bash
-    POST /auth/login
-    ```
-    Get your JWT access token (valid for 30 minutes).
-    
-    ### Step 3: Authorize
-    Click the 🔓 **Authorize** button above and paste your token.
-    
-    ### Step 4: Create Invoice
-    ```bash
-    POST /invoices/generate
-    ```
-    Generate your first invoice with PDF and QR code!
-    
-    ### Step 5: Send to Client
-    ```bash
-    POST /invoices/{id}/send-email
-    ```
-    Send the invoice via email with PDF attachment.
-    
-    ---
-    
-    ## 📚 Key Features
-    
-    ### 📄 Bilingual PDF Generation
-    - **Arabic (RTL)**: Native right-to-left support with Cairo font
-    - **English (LTR)**: Professional left-to-right layout
-    - Modern gradient design with company branding
-    - Print-ready A4 format
-    
-    ### 📧 Email Integration
-    - Send invoices directly to clients
-    - Professional HTML email templates
-    - PDF attachments included
-    - Rate limited: 5 emails/hour per user
-    
-    ### 💳 Payment Features
-    - Unique payment links per user
-    - QR codes for easy scanning
-    - Multiple currency support
-    - Ready for payment gateway integration
-    
-    ### 🔐 Security
-    - JWT-based authentication
-    - Password hashing with bcrypt
-    - Input validation with Pydantic
-    - CORS protection
-    - SQL injection prevention
-    - Security headers (HSTS, CSP, X-Frame-Options)
-    
-    ### 💰 Multi-Currency Support
-    Supported currencies: MAD, USD, EUR, SAR, AED, GBP, EGP
-    
-    ---
-    
-    ## 🔑 Authentication
-    
-    All endpoints (except `/auth/*`, `/health`, `/`) require authentication.
-    
-    **Header Format:**
-    ```
-    Authorization: Bearer YOUR_JWT_TOKEN
-    ```
-    
-    **Token Lifetime:** 30 minutes
-    
-    **To get a token:**
-    1. Register at `/auth/register`
-    2. Login at `/auth/login`
-    3. Copy the `access_token` from response
-    4. Click 🔓 Authorize button
-    5. Paste token and click Authorize
-    
-    ---
-    
-    ## 📊 Complete Example Workflow
-    
-    ### Using cURL:
-    ```bash
-    # 1. Register
-    curl -X POST {BASE_URL}/auth/register \\
-      -H "Content-Type: application/json" \\
-      -d '{
-        "email": "freelancer@example.com",
-        "username": "freelancer",
-        "password": "securepass123",
-        "company_name": "Freelance Pro"
-      }'
-    
-    # 2. Login
-    curl -X POST {BASE_URL}/auth/login \\
-      -H "Content-Type: application/json" \\
-      -d '{
-        "username": "freelancer",
-        "password": "securepass123"
-      }'
-    
-    # Save the token
-    TOKEN="eyJhbGc..."
-    
-    # 3. Create Invoice
-    curl -X POST {BASE_URL}/invoices/generate \\
-      -H "Authorization: Bearer $TOKEN" \\
-      -H "Content-Type: application/json" \\
-      -d '{
-        "client_name": "ACME Corporation",
-        "client_email": "billing@acme.com",
-        "language": "ar",
-        "currency": "MAD",
-        "items": [
-          {
-            "name": "تطوير موقع ويب",
-            "description": "موقع تجارة إلكترونية",
-            "quantity": 1,
-            "price": 15000
-          }
-        ],
-        "tax_rate": 20,
-        "discount_rate": 10
-      }'
-    
-    # 4. Send Email
-    curl -X POST {BASE_URL}/invoices/1/send-email \\
-      -H "Authorization: Bearer $TOKEN"
-    ```
-    
-    ### Using Python:
-    ```python
-    import requests
-    
-    BASE_URL = "{BASE_URL}"
-    
-    # 1. Login
-    response = requests.post(f"{{BASE_URL}}/auth/login", json={{
-        "username": "freelancer",
-        "password": "securepass123"
-    }})
-    token = response.json()["access_token"]
-    
-    # 2. Create Invoice
-    headers = {{"Authorization": f"Bearer {{token}}"}}
-    invoice = {{
-        "client_name": "ACME Corp",
-        "client_email": "billing@acme.com",
-        "language": "ar",
-        "currency": "MAD",
-        "items": [
-            {{"name": "Service", "quantity": 1, "price": 15000}}
-        ],
-        "tax_rate": 20
-    }}
-    
-    response = requests.post(
-        f"{{BASE_URL}}/invoices/generate",
-        json=invoice,
-        headers=headers
-    )
-    
-    invoice_data = response.json()
-    print(f"✅ Invoice {{invoice_data['invoice_number']}} created!")
-    ```
-    
-    ---
-    
-    ## ⚠️ Rate Limits
-    
-    | Endpoint | Limit | Window |
-    |----------|-------|--------|
-    | Email Sending | 5 requests | per hour per user |
-    | Other Endpoints | No limit | (MVP) |
-    
-    **429 Error**: If you exceed rate limits, wait 1 hour before retrying.
-    
-    ---
-    
-    ## 💰 Pricing Tiers (Suggested)
-    
-    | Tier | Invoices/Month | Price/Month | Email Limit |
-    |------|----------------|-------------|-------------|
-    | **Free** | 10 | $0 | 5/day |
-    | **Starter** | 100 | $9.99 | 50/day |
-    | **Professional** | 500 | $29.99 | 200/day |
-    | **Business** | 2,000 | $79.99 | Unlimited |
-    | **Enterprise** | Unlimited | Custom | Unlimited |
-    
-    ---
-    
-    ## 🐛 Common Error Codes
-    
-    | Code | Description | Solution |
-    |------|-------------|----------|
-    | **401** | Unauthorized | Check your token, login again if expired |
-    | **403** | Forbidden | Your account might be inactive |
-    | **404** | Not Found | Invoice/resource doesn't exist |
-    | **422** | Validation Error | Check your request body format |
-    | **429** | Too Many Requests | Wait before sending more emails |
-    | **500** | Server Error | Contact support if persists |
-    | **503** | Service Unavailable | Database connection issue |
-    
-    ---
-    
-    ## 📖 Additional Resources
-    
-    - **Full API Documentation**: See endpoints below
-    - **Postman Collection**: Import from repository
-    - **GitHub Repository**: [Your Repo URL]
-    - **Support Email**: support@yourdomain.com
-    - **Status Page**: https://status.yourdomain.com
-    
-    ---
-    
-    ## 🔄 API Versioning
-    
-    **Current Version**: v1.0.0
-    
-    All endpoints are versioned. Future versions will be available at:
-    - v1: `/v1/invoices/...` (current, default)
-    - v2: `/v2/invoices/...` (future)
-    
-    ---
-    
-    ## 📞 Support & Community
-    
-    - **Email**: support@yourdomain.com
-    - **Discord**: [Join our community]
-    - **GitHub Issues**: [Report bugs]
-    - **Twitter**: @YourAPIHandle
-    
-    ---
-    
-    **Made with ❤️ for freelancers and small businesses**
-    
-    *Happy invoicing! 🚀*
-    """.format(BASE_URL=settings.BASE_URL),
+    description=API_DESCRIPTION,
     summary="Professional Invoice Generator API",
     contact={
         "name": "Invoice Generator API Support Team",
-        "email": "support@yourdomain.com",
+        "email": "adelzidoune@gmail.com",
         "url": "https://yourdomain.com/contact"
     },
     license_info={
@@ -326,7 +205,7 @@ app = FastAPI(
     },
     servers=[
         {
-            "url": settings.BASE_URL,
+            "url": BASE_URL,
             "description": "Production Server"
         },
         {
@@ -338,76 +217,23 @@ app = FastAPI(
     openapi_tags=[
         {
             "name": "Authentication",
-            "description": """
-            **User registration and login operations**
-            
-            - No authentication required for these endpoints
-            - Register to create a new account
-            - Login to get JWT access token
-            - Token expires after 30 minutes
-            
-            **Rate Limits**: None (MVP)
-            """,
+            "description": "User registration and login operations. No authentication required for these endpoints.",
         },
         {
             "name": "Invoices",
-            "description": """
-            **Complete invoice management system**
-            
-            - Create invoices with bilingual PDF
-            - Generate QR codes automatically
-            - Send invoices via email
-            - Track invoice status
-            - Download PDF files
-            
-            **Authentication**: Required (JWT Bearer token)
-            
-            **Email Rate Limit**: 5 emails/hour per user
-            """,
-            "externalDocs": {
-                "description": "Detailed invoice documentation",
-                "url": "https://docs.yourdomain.com/invoices"
-            }
+            "description": "Complete invoice management system. Authentication required (JWT Bearer token). Email Rate Limit: 5 emails/hour per user.",
         },
         {
             "name": "Users",
-            "description": """
-            **User profile and settings management**
-            
-            - View your profile information
-            - Update company details
-            - Get invoice statistics
-            - Manage payment links
-            
-            **Authentication**: Required (JWT Bearer token)
-            """,
+            "description": "User profile and settings management. Authentication required (JWT Bearer token).",
         },
         {
             "name": "Root",
-            "description": """
-            **API information and metadata**
-            
-            - Get API version
-            - Check available endpoints
-            - View documentation links
-            
-            **Authentication**: Not required (public)
-            """,
+            "description": "API information and metadata. No authentication required.",
         },
         {
             "name": "Health",
-            "description": """
-            **Health check and monitoring**
-            
-            - Check API status
-            - Verify service availability
-            - Monitor uptime
-            - Database connectivity check
-            
-            **Authentication**: Not required (public)
-            
-            **Use for**: Load balancer health checks, monitoring tools
-            """,
+            "description": "Health check and monitoring. No authentication required.",
         }
     ],
     openapi_url="/openapi.json",
@@ -543,7 +369,6 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup on application shutdown"""
     logger.info("🛑 Application shutting down...")
-    # Add cleanup tasks here if needed
 
 
 @app.get("/", tags=["Root"], summary="API Information")
@@ -552,12 +377,6 @@ async def root():
     Root endpoint - Get API information and available resources
     
     **No authentication required**
-    
-    Returns basic information about the API including:
-    - API name and version
-    - Documentation links
-    - Health check endpoint
-    - Available features
     """
     return {
         "message": "Welcome to Invoice Generator API! 🧾",
@@ -597,24 +416,6 @@ async def health_check():
     Comprehensive health check endpoint for monitoring and load balancers
     
     **No authentication required**
-    
-    Checks:
-    - API service status
-    - Database connectivity (real ping)
-    - File system access
-    
-    Returns:
-    - Service status
-    - API version  
-    - Current timestamp
-    - Component health status
-    
-    **Use this endpoint for:**
-    - Load balancer health checks
-    - Uptime monitoring
-    - Service availability verification
-    
-    **Expected Response Time**: < 200ms
     """
     health_status = {
         "status": "healthy",
@@ -681,8 +482,6 @@ async def get_changelog():
     Get API version history and changelog
     
     **No authentication required**
-    
-    Returns list of all API versions with their changes and release dates.
     """
     return {
         "current_version": settings.APP_VERSION,
