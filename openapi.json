@@ -1,0 +1,1190 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Invoice Generator API",
+    "description": "🧾 **Arabic Invoice Generator API**\n\nProfessional bilingual invoice generator for freelancers and businesses in the MENA region.\n\n## 🚀 Quick Start Guide\n\n### Step 1: Register Your Account\n```bash\nPOST /auth/register\n```\n\n### Step 2: Login & Get Token\n```bash\nPOST /auth/login\n```\n\n### Step 3: Authorize\nClick the 🔓 **Authorize** button and paste your token.\n\n### Step 4: Create Invoice\n```bash\nPOST /invoices/generate\n```\n\n### Step 5: Send to Client\n```bash\nPOST /invoices/{id}/send-email\n```\n\n## 📚 Key Features\n\n- **Bilingual PDF Generation** (Arabic RTL + English LTR)\n- **Email Integration** with PDF attachments\n- **QR Code Generation** for easy payments\n- **Multi-Currency Support** (MAD, USD, EUR, SAR, AED, GBP, EGP)\n- **JWT Authentication** with 30-minute tokens\n- **Security Headers** (HSTS, CSP, X-Frame-Options)\n- **Request/Error Logging** for debugging\n- **Real Health Checks** (Database, Filesystem)\n\n## 🔑 Authentication\n\nAll endpoints (except `/auth/*`, `/health`, `/`, `/changelog`) require authentication.\n\n**Header Format:**\n```\nAuthorization: Bearer YOUR_JWT_TOKEN\n```\n\n**Token Lifetime:** 30 minutes\n\n## ⚠️ Rate Limits\n\n| Endpoint | Limit | Window |\n|----------|-------|--------|\n| Email Sending | 5 requests | per hour per user |\n| Other Endpoints | No limit | (MVP) |\n\n## 🐛 Common Error Codes\n\n- **401**: Unauthorized - Token expired or invalid\n- **403**: Forbidden - Account inactive\n- **404**: Not Found - Resource doesn't exist\n- **422**: Validation Error - Invalid request body\n- **429**: Too Many Requests - Rate limit exceeded\n- **500**: Server Error - Internal issue\n- **503**: Service Unavailable - Database connection issue",
+    "version": "1.0.0",
+    "summary": "Professional Invoice Generator API",
+    "contact": {
+      "name": "Invoice Generator API Support Team",
+      "email": "support@yourdomain.com",
+      "url": "https://yourdomain.com/contact"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "termsOfService": "https://yourdomain.com/terms"
+  },
+  "servers": [
+    {
+      "url": "https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app",
+      "description": "Koyeb Production Server"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "**User registration and login operations**\n\n- No authentication required for these endpoints\n- Register to create a new account\n- Login to get JWT access token\n- Token expires after 30 minutes\n\n**Rate Limits**: None (MVP)"
+    },
+    {
+      "name": "Invoices",
+      "description": "**Complete invoice management system**\n\n- Create invoices with bilingual PDF\n- Generate QR codes automatically\n- Send invoices via email\n- Track invoice status\n- Download PDF files\n\n**Authentication**: Required (JWT Bearer token)\n\n**Email Rate Limit**: 5 emails/hour per user",
+      "externalDocs": {
+        "description": "Detailed invoice documentation",
+        "url": "https://docs.yourdomain.com/invoices"
+      }
+    },
+    {
+      "name": "Users",
+      "description": "**User profile and settings management**\n\n- View your profile information\n- Update company details\n- Get invoice statistics\n- Manage payment links\n\n**Authentication**: Required (JWT Bearer token)"
+    },
+    {
+      "name": "Root",
+      "description": "**API information and metadata**\n\n- Get API version\n- Check available endpoints\n- View documentation links\n- Version changelog\n\n**Authentication**: Not required (public)"
+    },
+    {
+      "name": "Health",
+      "description": "**Health check and monitoring**\n\n- Check API status\n- Verify service availability\n- Monitor uptime\n- Database connectivity check\n- Filesystem access check\n\n**Authentication**: Not required (public)\n\n**Use for**: Load balancer health checks, monitoring tools"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Root"],
+        "summary": "API Information",
+        "description": "Root endpoint - Get API information and available resources\n\n**No authentication required**\n\nReturns basic information about the API including:\n- API name and version\n- Documentation links\n- Health check endpoint\n- Available features",
+        "operationId": "root",
+        "responses": {
+          "200": {
+            "description": "API information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Welcome to Invoice Generator API! 🧾"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "operational"
+                    },
+                    "base_url": {
+                      "type": "string",
+                      "example": "https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app"
+                    },
+                    "documentation": {
+                      "type": "object",
+                      "properties": {
+                        "swagger": {"type": "string"},
+                        "redoc": {"type": "string"},
+                        "openapi": {"type": "string"}
+                      }
+                    },
+                    "features": {
+                      "type": "array",
+                      "items": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health Check",
+        "description": "Comprehensive health check endpoint for monitoring and load balancers\n\n**No authentication required**\n\nChecks:\n- API service status\n- Database connectivity (real ping)\n- File system access\n- Email configuration\n\nReturns:\n- Service status\n- API version\n- Current timestamp\n- Component health status\n\n**Use this endpoint for:**\n- Load balancer health checks\n- Uptime monitoring\n- Service availability verification\n\n**Expected Response Time**: < 200ms",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["healthy", "unhealthy"],
+                      "example": "healthy"
+                    },
+                    "service": {
+                      "type": "string",
+                      "example": "invoice-generator-api"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-10-10T12:00:00.000000"
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "object",
+                          "properties": {
+                            "status": {"type": "string", "example": "healthy"},
+                            "message": {"type": "string", "example": "Database connection successful"}
+                          }
+                        },
+                        "filesystem": {
+                          "type": "object",
+                          "properties": {
+                            "status": {"type": "string", "example": "healthy"},
+                            "message": {"type": "string", "example": "File system access successful"}
+                          }
+                        },
+                        "email": {
+                          "type": "object",
+                          "properties": {
+                            "status": {"type": "string", "example": "configured"},
+                            "message": {"type": "string", "example": "Email service configured"}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service is unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string", "example": "unhealthy"},
+                    "checks": {"type": "object"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/changelog": {
+      "get": {
+        "tags": ["Root"],
+        "summary": "API Changelog",
+        "description": "Get API version history and changelog\n\n**No authentication required**\n\nReturns list of all API versions with their changes and release dates.",
+        "operationId": "get_changelog",
+        "responses": {
+          "200": {
+            "description": "Changelog information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "current_version": {
+                      "type": "string",
+                      "example": "1.0.0"
+                    },
+                    "versions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "version": {"type": "string"},
+                          "release_date": {"type": "string", "format": "date"},
+                          "status": {"type": "string"},
+                          "changes": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                          },
+                          "breaking_changes": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                          }
+                        }
+                      }
+                    },
+                    "upcoming": {
+                      "type": "object",
+                      "properties": {
+                        "version": {"type": "string"},
+                        "estimated_date": {"type": "string", "format": "date"},
+                        "planned_features": {
+                          "type": "array",
+                          "items": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new user",
+        "description": "Create a new user account\n\n**No authentication required**\n\nCreates a new user with:\n- Unique email and username\n- Hashed password (bcrypt)\n- Optional company information\n- Automatic payment link generation",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "username", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "freelancer@example.com",
+                    "description": "Valid email address"
+                  },
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 50,
+                    "example": "freelancer",
+                    "description": "Unique username (3-50 characters)"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 8,
+                    "example": "securepass123",
+                    "description": "Strong password (min 8 characters)"
+                  },
+                  "full_name": {
+                    "type": "string",
+                    "example": "Ahmed Freelancer",
+                    "description": "Full name (optional)"
+                  },
+                  "company_name": {
+                    "type": "string",
+                    "example": "Freelance Pro",
+                    "description": "Company name (optional)"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "+212600000000",
+                    "description": "Phone number (optional)"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "123 Street, Casablanca, Morocco",
+                    "description": "Full address (optional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {"type": "string", "example": "User created successfully"},
+                    "user_id": {"type": "integer", "example": 1},
+                    "username": {"type": "string", "example": "freelancer"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Email or username already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {"type": "string", "example": "Email already registered"}
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "loc": {"type": "array"},
+                          "msg": {"type": "string"},
+                          "type": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login user",
+        "description": "Authenticate user and return JWT token\n\n**No authentication required**\n\nReturns:\n- JWT access token (valid for 30 minutes)\n- Token type (Bearer)\n- User information",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "freelancer",
+                    "description": "Username or email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "example": "securepass123",
+                    "description": "User password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "example": "bearer"
+                    },
+                    "expires_in": {
+                      "type": "integer",
+                      "example": 1800,
+                      "description": "Token expiration time in seconds"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {"type": "string", "example": "Invalid username or password"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/generate": {
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "Create a new invoice",
+        "description": "Generate a new invoice with items and calculations\n\n**Authentication required**\n\nCreates:\n- Bilingual PDF (Arabic/English)\n- QR code with payment link\n- Invoice number (auto-generated)\n- Tax and discount calculations\n\n**Supported currencies**: MAD, USD, EUR, SAR, AED, GBP, EGP",
+        "operationId": "generate_invoice",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["client_name", "client_email", "items"],
+                "properties": {
+                  "client_name": {
+                    "type": "string",
+                    "example": "ACME Corporation",
+                    "description": "Client company name"
+                  },
+                  "client_email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "billing@acme.com",
+                    "description": "Client email for invoice delivery"
+                  },
+                  "client_phone": {
+                    "type": "string",
+                    "example": "+1234567890",
+                    "description": "Client phone number (optional)"
+                  },
+                  "client_address": {
+                    "type": "string",
+                    "example": "123 Business Ave, New York, USA",
+                    "description": "Client full address (optional)"
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": ["en", "ar", "fr"],
+                    "default": "en",
+                    "example": "ar",
+                    "description": "Invoice language (en=English, ar=Arabic, fr=French)"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": ["MAD", "USD", "EUR", "SAR", "AED", "GBP", "EGP"],
+                    "default": "USD",
+                    "example": "MAD",
+                    "description": "Currency code"
+                  },
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": ["name", "quantity", "price"],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "example": "تطوير موقع ويب",
+                          "description": "Item/service name"
+                        },
+                        "description": {
+                          "type": "string",
+                          "example": "موقع تجارة إلكترونية كامل",
+                          "description": "Detailed description (optional)"
+                        },
+                        "quantity": {
+                          "type": "number",
+                          "minimum": 0.01,
+                          "example": 1,
+                          "description": "Quantity or hours"
+                        },
+                        "price": {
+                          "type": "number",
+                          "minimum": 0,
+                          "example": 15000,
+                          "description": "Unit price"
+                        }
+                      }
+                    },
+                    "description": "List of invoice items (min 1 item)"
+                  },
+                  "tax_rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "default": 0,
+                    "example": 20,
+                    "description": "Tax rate percentage (0-100)"
+                  },
+                  "discount_rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100,
+                    "default": 0,
+                    "example": 10,
+                    "description": "Discount rate percentage (0-100)"
+                  },
+                  "due_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-11-10T00:00:00",
+                    "description": "Payment due date (optional)"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "example": "شكراً لتعاملكم معنا. الدفع خلال 30 يوم",
+                    "description": "Additional notes or payment terms (optional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invoice created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer", "example": 1},
+                    "invoice_number": {"type": "string", "example": "INV-2025-0001"},
+                    "status": {"type": "string", "example": "draft"},
+                    "total": {"type": "number", "example": 16200},
+                    "pdf_url": {"type": "string", "example": "/static/invoices/INV-2025-0001.pdf"},
+                    "qr_code_url": {"type": "string", "example": "/static/qr_codes/INV-2025-0001.png"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or expired token"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/invoices": {
+      "get": {
+        "tags": ["Invoices"],
+        "summary": "List invoices",
+        "description": "Get a paginated list of user's invoices\n\n**Authentication required**\n\nSupports:\n- Pagination (page & page_size)\n- Status filtering\n- Sorting by date",
+        "operationId": "list_invoices",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number (starts at 1)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page (1-100)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["draft", "sent", "paid", "cancelled"]
+            },
+            "description": "Filter by invoice status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {"type": "integer", "example": 25},
+                    "page": {"type": "integer", "example": 1},
+                    "page_size": {"type": "integer", "example": 10},
+                    "invoices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {"type": "integer"},
+                          "invoice_number": {"type": "string"},
+                          "client_name": {"type": "string"},
+                          "total": {"type": "number"},
+                          "status": {"type": "string"},
+                          "created_at": {"type": "string", "format": "date-time"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}": {
+      "get": {
+        "tags": ["Invoices"],
+        "summary": "Get invoice details",
+        "description": "Retrieve a specific invoice by ID\n\n**Authentication required**\n\nReturns complete invoice information including items, calculations, and file URLs.",
+        "operationId": "get_invoice",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Invoice ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice details"
+          },
+          "404": {
+            "description": "Invoice not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Invoices"],
+        "summary": "Update invoice",
+        "description": "Update invoice details or status\n\n**Authentication required**\n\nCan update:\n- Invoice status\n- Notes\n- Payment information",
+        "operationId": "update_invoice",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["draft", "sent", "paid", "cancelled"],
+                    "example": "paid",
+                    "description": "New invoice status"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "example": "Payment received via bank transfer",
+                    "description": "Updated notes"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invoice updated successfully"
+          },
+          "404": {
+            "description": "Invoice not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Invoices"],
+        "summary": "Delete invoice",
+        "description": "Delete a specific invoice\n\n**Authentication required**\n\nPermanently deletes:\n- Invoice record\n- PDF file\n- QR code",
+        "operationId": "delete_invoice",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Invoice deleted successfully"
+          },
+          "404": {
+            "description": "Invoice not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/download": {
+      "get": {
+        "tags": ["Invoices"],
+        "summary": "Download invoice PDF",
+        "description": "Download invoice as PDF file\n\n**Authentication required**\n\nReturns the invoice PDF file for download.",
+        "operationId": "download_invoice",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invoice not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/send-email": {
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "Send invoice by email",
+        "description": "Send invoice to client via email\n\n**Authentication required**\n\n**Rate Limit**: 5 emails per hour per user\n\nSends:\n- Professional HTML email\n- PDF attachment\n- QR code for payment\n\nAutomatically updates invoice status to 'sent'.",
+        "operationId": "send_invoice_email",
+        "security": [{"BearerAuth": []}],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Thank you for your business! Please find your invoice attached.",
+                    "description": "Custom message to include in email (optional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {"type": "string", "example": "Email sent successfully"},
+                    "sent_to": {"type": "string", "example": "billing@acme.com"},
+                    "invoice_number": {"type": "string", "example": "INV-2025-0001"}
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invoice not found"
+          },
+          "429": {
+            "description": "Too many requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {"type": "string", "example": "Rate limit exceeded. Wait 1 hour before sending more emails."}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get current user",
+        "description": "Get current user profile information\n\n**Authentication required**\n\nReturns:\n- User details\n- Company information\n- Account statistics\n- Payment link",
+        "operationId": "get_current_user",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {"type": "integer", "example": 1},
+                    "username": {"type": "string", "example": "freelancer"},
+                    "email": {"type": "string", "example": "freelancer@example.com"},
+                    "full_name": {"type": "string", "example": "Ahmed Freelancer"},
+                    "company_name": {"type": "string", "example": "Freelance Pro"},
+                    "phone": {"type": "string", "example": "+212600000000"},
+                    "address": {"type": "string", "example": "123 Street, Casablanca"},
+                    "payment_link": {"type": "string", "example": "https://pay.example.com/freelancer"},
+                    "is_active": {"type": "boolean", "example": true},
+                    "created_at": {"type": "string", "format": "date-time"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update user profile",
+        "description": "Update current user profile information\n\n**Authentication required**\n\nCan update:\n- Full name\n- Company name\n- Phone number\n- Address",
+        "operationId": "update_user_profile",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "full_name": {
+                    "type": "string",
+                    "example": "Ahmed Updated",
+                    "description": "Updated full name"
+                  },
+                  "company_name": {
+                    "type": "string",
+                    "example": "New Company LLC",
+                    "description": "Updated company name"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "+212611222333",
+                    "description": "Updated phone number"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "456 New Street, Rabat, Morocco",
+                    "description": "Updated address"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {"type": "string", "example": "Profile updated successfully"},
+                    "user": {"type": "object"}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/users/me/stats": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user statistics",
+        "description": "Get statistics about user's invoices\n\n**Authentication required**\n\nReturns:\n- Total invoices count\n- Invoices by status\n- Total revenue\n- Revenue by currency\n- Recent activity",
+        "operationId": "get_user_stats",
+        "security": [{"BearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "User statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_invoices": {"type": "integer", "example": 25},
+                    "invoices_by_status": {
+                      "type": "object",
+                      "properties": {
+                        "draft": {"type": "integer", "example": 5},
+                        "sent": {"type": "integer", "example": 10},
+                        "paid": {"type": "integer", "example": 8},
+                        "cancelled": {"type": "integer", "example": 2}
+                      }
+                    },
+                    "total_revenue": {"type": "number", "example": 125000},
+                    "revenue_by_currency": {
+                      "type": "object",
+                      "properties": {
+                        "MAD": {"type": "number", "example": 100000},
+                        "USD": {"type": "number", "example": 25000}
+                      }
+                    },
+                    "pending_amount": {"type": "number", "example": 30000},
+                    "paid_amount": {"type": "number", "example": 95000}
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Authorization header using the Bearer scheme.\n\n**How to use:**\n1. Login at `/auth/login`\n2. Copy the `access_token` from response\n3. Click 🔓 **Authorize** button above\n4. Enter: `Bearer <your_token>`\n5. Click **Authorize**\n\n**Token lifetime:** 30 minutes\n\n**Example:**\n```\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n```"
+      }
+    },
+    "schemas": {
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "example": 1},
+          "invoice_number": {"type": "string", "example": "INV-2025-0001"},
+          "user_id": {"type": "integer", "example": 1},
+          "client_name": {"type": "string", "example": "ACME Corporation"},
+          "client_email": {"type": "string", "example": "billing@acme.com"},
+          "client_phone": {"type": "string", "example": "+1234567890"},
+          "client_address": {"type": "string", "example": "123 Business Ave"},
+          "language": {"type": "string", "enum": ["en", "ar", "fr"], "example": "ar"},
+          "currency": {"type": "string", "example": "MAD"},
+          "subtotal": {"type": "number", "example": 15000},
+          "tax_rate": {"type": "number", "example": 20},
+          "tax_amount": {"type": "number", "example": 3000},
+          "discount_rate": {"type": "number", "example": 10},
+          "discount_amount": {"type": "number", "example": 1500},
+          "total": {"type": "number", "example": 16500},
+          "status": {"type": "string", "enum": ["draft", "sent", "paid", "cancelled"], "example": "draft"},
+          "due_date": {"type": "string", "format": "date-time"},
+          "notes": {"type": "string", "example": "Thank you for your business"},
+          "pdf_path": {"type": "string", "example": "static/invoices/INV-2025-0001.pdf"},
+          "qr_code_path": {"type": "string", "example": "static/qr_codes/INV-2025-0001.png"},
+          "created_at": {"type": "string", "format": "date-time"},
+          "updated_at": {"type": "string", "format": "date-time"},
+          "items": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/InvoiceItem"}
+          }
+        }
+      },
+      "InvoiceItem": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "example": 1},
+          "invoice_id": {"type": "integer", "example": 1},
+          "name": {"type": "string", "example": "Web Development"},
+          "description": {"type": "string", "example": "E-commerce platform"},
+          "quantity": {"type": "number", "example": 1},
+          "price": {"type": "number", "example": 15000},
+          "total": {"type": "number", "example": 15000}
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "example": 1},
+          "username": {"type": "string", "example": "freelancer"},
+          "email": {"type": "string", "example": "freelancer@example.com"},
+          "full_name": {"type": "string", "example": "Ahmed Freelancer"},
+          "company_name": {"type": "string", "example": "Freelance Pro"},
+          "phone": {"type": "string", "example": "+212600000000"},
+          "address": {"type": "string", "example": "123 Street, Casablanca"},
+          "payment_link": {"type": "string", "example": "https://pay.example.com/freelancer"},
+          "is_active": {"type": "boolean", "example": true},
+          "created_at": {"type": "string", "format": "date-time"},
+          "updated_at": {"type": "string", "format": "date-time"}
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "detail": {
+            "oneOf": [
+              {"type": "string"},
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "loc": {"type": "array", "items": {"type": "string"}},
+                    "msg": {"type": "string"},
+                    "type": {"type": "string"}
+                  }
+                }
+              }
+            ]
+          },
+          "error_type": {"type": "string"},
+          "path": {"type": "string"}
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Authentication token is missing or invalid",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "detail": "Could not validate credentials"
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Access forbidden - Account inactive or insufficient permissions",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "detail": "Account is inactive"
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "detail": "Invoice not found"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Request validation error",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "detail": [
+                {
+                  "loc": ["body", "email"],
+                  "msg": "value is not a valid email address",
+                  "type": "value_error.email"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "RateLimitError": {
+        "description": "Rate limit exceeded",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "detail": "Rate limit exceeded. Wait 1 hour before sending more emails."
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "detail": "Internal server error. Please try again later.",
+              "error_type": "DatabaseError"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [],
+  "x-tagGroups": [
+    {
+      "name": "Getting Started",
+      "tags": ["Root", "Health"]
+    },
+    {
+      "name": "Core Features",
+      "tags": ["Authentication", "Invoices", "Users"]
+    }
+  ]
+}

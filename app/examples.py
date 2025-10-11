@@ -7,7 +7,7 @@ Provides code snippets in multiple languages for easy integration
 CURL_EXAMPLES = {
     "register": """
 # Register new user
-curl -X POST http://localhost:8000/auth/register \\
+curl -X POST https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "freelancer@example.com",
@@ -21,7 +21,7 @@ curl -X POST http://localhost:8000/auth/register \\
     
     "login": """
 # Login and get JWT token
-curl -X POST http://localhost:8000/auth/login \\
+curl -X POST https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/auth/login \\
   -H "Content-Type: application/json" \\
   -d '{
     "username": "johndoe",
@@ -35,7 +35,7 @@ curl -X POST http://localhost:8000/auth/login \\
 # Create invoice (requires authentication)
 TOKEN="your_jwt_token_here"
 
-curl -X POST http://localhost:8000/invoices/generate \\
+curl -X POST https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/invoices/generate \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -65,7 +65,7 @@ curl -X POST http://localhost:8000/invoices/generate \\
     
     "send_email": """
 # Send invoice via email
-curl -X POST http://localhost:8000/invoices/1/send-email \\
+curl -X POST https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/invoices/1/send-email \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -79,7 +79,7 @@ PYTHON_EXAMPLES = {
     "complete_workflow": """
 import requests
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app"
 
 # 1. Register user
 register_data = {
@@ -155,7 +155,7 @@ with open(f"invoice_{invoice['invoice_number']}.pdf", "wb") as f:
     "error_handling": """
 import requests
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app"
 headers = {"Authorization": f"Bearer {token}"}
 
 try:
@@ -189,7 +189,7 @@ JAVASCRIPT_EXAMPLES = {
     "fetch_api": """
 // Using Fetch API (Browser/Node.js 18+)
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app';
 
 // 1. Login
 async function login(username, password) {
@@ -249,7 +249,7 @@ async function createInvoice(token, invoiceData) {
 // Using Axios (Node.js)
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app';
 
 // Create axios instance with interceptors
 const api = axios.create({
@@ -314,7 +314,7 @@ require 'vendor/autoload.php';
 use GuzzleHttp\\Client;
 
 $client = new Client([
-    'base_uri' => 'http://localhost:8000',
+    'base_uri' => 'https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app',
     'headers' => ['Content-Type' => 'application/json']
 ]);
 
@@ -415,7 +415,7 @@ INTEGRATION_EXAMPLES = {
 // Add to your theme's functions.php
 
 function create_invoice_via_api($client_name, $client_email, $amount) {
-    $api_url = 'https://api.yourdomain.com';
+    $api_url = 'https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app
     $token = get_option('invoice_api_token'); // Store token in WP options
     
     $invoice_data = array(
@@ -453,14 +453,14 @@ function create_invoice_via_api($client_name, $client_email, $amount) {
 // Use in Zapier "Webhooks by Zapier" action
 
 // Step 1: Login (do this once, store token)
-POST https://api.yourdomain.com/auth/login
+POST https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/auth/login
 Body: {
   "username": "your_username",
   "password": "your_password"
 }
 
 // Step 2: Create Invoice (use in Zap)
-POST https://api.yourdomain.com/invoices/generate
+POST https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/invoices/generate
 Headers:
   Authorization: Bearer {{token}}
   Content-Type: application/json
@@ -485,7 +485,7 @@ Body: {
 
 {
   "method": "POST",
-  "url": "https://api.yourdomain.com/invoices/generate",
+  "url": "https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/invoices/generate",
   "authentication": "genericCredentialType",
   "genericAuthType": "httpHeaderAuth",
   "httpHeaderAuth": {
@@ -639,7 +639,7 @@ def safe_api_call(func):
 @safe_api_call
 def create_invoice(token, data):
     response = requests.post(
-        "https://api.yourdomain.com/invoices/generate",
+        "https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app/invoices/generate",
         headers={"Authorization": f"Bearer {token}"},
         json=data,
         timeout=30
@@ -693,7 +693,7 @@ def send_invoice_email(invoice_id, token):
     
     # Make request
     response = requests.post(
-        f"https://api.yourdomain.com/invoices/{invoice_id}/send-email",
+        f"https://screeching-tildi-adelzidoune-ca9a7151.koyeb.appinvoices/{invoice_id}/send-email",
         headers={"Authorization": f"Bearer {token}"}
     )
     

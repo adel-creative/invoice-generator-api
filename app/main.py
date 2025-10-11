@@ -3,14 +3,64 @@ Main FastAPI Application
 Entry point for the Invoice Generator API
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pathlib import Path
+import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from .config import settings
-from .database import init_db
+from .database import init_db, SessionLocal
 from .api import auth, invoices, users
+
+# Setup comprehensive logging
+logs_dir = Path("logs")
+logs_dir.mkdir(exist_ok=True)
+
+# Create formatters
+detailed_formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+)
+simple_formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(message)s'
+)
+
+# Setup root logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Console Handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(simple_formatter)
+
+# File Handler - Rotating (10MB per file, keep 5 backups)
+file_handler = RotatingFileHandler(
+    logs_dir / "app.log",
+    maxBytes=10_000_000,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(detailed_formatter)
+
+# Error File Handler - Rotating
+error_handler = RotatingFileHandler(
+    logs_dir / "errors.log",
+    maxBytes=10_000_000,
+    backupCount=5,
+    encoding='utf-8'
+)
+error_handler.setLevel(logging.ERROR)
+error_handler.setFormatter(detailed_formatter)
+
+# Add handlers
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+logger.addHandler(error_handler)
 
 # Create FastAPI app with comprehensive documentation
 app = FastAPI(
@@ -36,7 +86,7 @@ app = FastAPI(
     Get your JWT access token (valid for 30 minutes).
     
     ### Step 3: Authorize
-    Click the 🔒 **Authorize** button above and paste your token.
+    Click the 🔓 **Authorize** button above and paste your token.
     
     ### Step 4: Create Invoice
     ```bash
@@ -78,6 +128,7 @@ app = FastAPI(
     - Input validation with Pydantic
     - CORS protection
     - SQL injection prevention
+    - Security headers (HSTS, CSP, X-Frame-Options)
     
     ### 💰 Multi-Currency Support
     Supported currencies: MAD, USD, EUR, SAR, AED, GBP, EGP
@@ -99,7 +150,7 @@ app = FastAPI(
     1. Register at `/auth/register`
     2. Login at `/auth/login`
     3. Copy the `access_token` from response
-    4. Click 🔒 Authorize button
+    4. Click 🔓 Authorize button
     5. Paste token and click Authorize
     
     ---
@@ -109,7 +160,7 @@ app = FastAPI(
     ### Using cURL:
     ```bash
     # 1. Register
-    curl -X POST http://localhost:8000/auth/register \\
+    curl -X POST {BASE_URL}/auth/register \\
       -H "Content-Type: application/json" \\
       -d '{
         "email": "freelancer@example.com",
@@ -119,7 +170,7 @@ app = FastAPI(
       }'
     
     # 2. Login
-    curl -X POST http://localhost:8000/auth/login \\
+    curl -X POST {BASE_URL}/auth/login \\
       -H "Content-Type: application/json" \\
       -d '{
         "username": "freelancer",
@@ -130,7 +181,7 @@ app = FastAPI(
     TOKEN="eyJhbGc..."
     
     # 3. Create Invoice
-    curl -X POST http://localhost:8000/invoices/generate \\
+    curl -X POST {BASE_URL}/invoices/generate \\
       -H "Authorization: Bearer $TOKEN" \\
       -H "Content-Type: application/json" \\
       -d '{
@@ -151,7 +202,7 @@ app = FastAPI(
       }'
     
     # 4. Send Email
-    curl -X POST http://localhost:8000/invoices/1/send-email \\
+    curl -X POST {BASE_URL}/invoices/1/send-email \\
       -H "Authorization: Bearer $TOKEN"
     ```
     
@@ -159,36 +210,36 @@ app = FastAPI(
     ```python
     import requests
     
-    BASE_URL = "http://localhost:8000"
+    BASE_URL = "{BASE_URL}"
     
     # 1. Login
-    response = requests.post(f"{BASE_URL}/auth/login", json={
+    response = requests.post(f"{{BASE_URL}}/auth/login", json={{
         "username": "freelancer",
         "password": "securepass123"
-    })
+    }})
     token = response.json()["access_token"]
     
     # 2. Create Invoice
-    headers = {"Authorization": f"Bearer {token}"}
-    invoice = {
+    headers = {{"Authorization": f"Bearer {{token}}"}}
+    invoice = {{
         "client_name": "ACME Corp",
         "client_email": "billing@acme.com",
         "language": "ar",
         "currency": "MAD",
         "items": [
-            {"name": "Service", "quantity": 1, "price": 15000}
+            {{"name": "Service", "quantity": 1, "price": 15000}}
         ],
         "tax_rate": 20
-    }
+    }}
     
     response = requests.post(
-        f"{BASE_URL}/invoices/generate",
+        f"{{BASE_URL}}/invoices/generate",
         json=invoice,
         headers=headers
     )
     
     invoice_data = response.json()
-    print(f"✅ Invoice {invoice_data['invoice_number']} created!")
+    print(f"✅ Invoice {{invoice_data['invoice_number']}} created!")
     ```
     
     ---
@@ -226,6 +277,7 @@ app = FastAPI(
     | **422** | Validation Error | Check your request body format |
     | **429** | Too Many Requests | Wait before sending more emails |
     | **500** | Server Error | Contact support if persists |
+    | **503** | Service Unavailable | Database connection issue |
     
     ---
     
@@ -239,7 +291,7 @@ app = FastAPI(
     
     ---
     
-    ## 📄 API Versioning
+    ## 🔄 API Versioning
     
     **Current Version**: v1.0.0
     
@@ -261,7 +313,7 @@ app = FastAPI(
     **Made with ❤️ for freelancers and small businesses**
     
     *Happy invoicing! 🚀*
-    """,
+    """.format(BASE_URL=settings.BASE_URL),
     summary="Professional Invoice Generator API",
     contact={
         "name": "Invoice Generator API Support Team",
@@ -274,16 +326,12 @@ app = FastAPI(
     },
     servers=[
         {
+            "url": settings.BASE_URL,
+            "description": "Production Server"
+        },
+        {
             "url": "http://localhost:8000",
-            "description": "Development server (local)"
-        },
-        {
-            "url": "https://api-staging.yourdomain.com",
-            "description": "Staging server (testing)"
-        },
-        {
-            "url": "https://api.yourdomain.com",
-            "description": "Production server"
+            "description": "Local Development Server"
         }
     ],
     terms_of_service="https://yourdomain.com/terms",
@@ -354,6 +402,7 @@ app = FastAPI(
             - Check API status
             - Verify service availability
             - Monitor uptime
+            - Database connectivity check
             
             **Authentication**: Not required (public)
             
@@ -366,8 +415,83 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to all responses"""
+    response = await call_next(request)
+    
+    # Security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    
+    return response
+
+# Request Logging Middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests"""
+    start_time = datetime.utcnow()
+    
+    # Log request
+    logger.info(f"➡️  {request.method} {request.url.path} - Client: {request.client.host}")
+    
+    response = await call_next(request)
+    
+    # Calculate process time
+    process_time = (datetime.utcnow() - start_time).total_seconds()
+    
+    # Log response
+    logger.info(
+        f"⬅️  {request.method} {request.url.path} - "
+        f"Status: {response.status_code} - "
+        f"Time: {process_time:.3f}s"
+    )
+    
+    response.headers["X-Process-Time"] = str(process_time)
+    
+    return response
+
+# Global exception handler for unhandled errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(
+        f"❌ Unhandled exception on {request.method} {request.url.path}: {str(exc)}",
+        exc_info=True
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "Internal server error. Please try again later.",
+            "error_type": type(exc).__name__,
+            "path": str(request.url.path)
+        }
+    )
+
+# Validation error handler
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(f"⚠️  Validation error on {request.url.path}: {exc.errors()}")
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": exc.errors(),
+            "body": exc.body if hasattr(exc, 'body') else None
+        }
+    )
+
 # CORS Configuration
-origins = settings.ALLOWED_ORIGINS.split(",")
+try:
+    origins = settings.ALLOWED_ORIGINS.split(",")
+    logger.info(f"🌐 CORS enabled for origins: {origins}")
+except Exception as e:
+    logger.warning(f"⚠️  CORS configuration error, allowing all origins: {e}")
+    origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -378,25 +502,48 @@ app.add_middleware(
 )
 
 # Mount static files (for serving PDFs and QR codes)
-Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
-Path(settings.QR_DIR).mkdir(parents=True, exist_ok=True)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
+try:
+    Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+    Path(settings.QR_DIR).mkdir(parents=True, exist_ok=True)
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    logger.info("📁 Static files mounted successfully")
+except Exception as e:
+    logger.warning(f"⚠️  Could not mount static files: {e}")
 
 # Include routers
-app.include_router(auth.router)
-app.include_router(invoices.router)
-app.include_router(users.router)
+try:
+    app.include_router(auth.router)
+    app.include_router(invoices.router)
+    app.include_router(users.router)
+    logger.info("🔌 All routers included successfully")
+except Exception as e:
+    logger.error(f"❌ Error including routers: {e}")
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on startup"""
-    init_db()
-    print(f"✅ {settings.APP_NAME} v{settings.APP_VERSION} started successfully!")
-    print(f"📚 API Documentation: http://localhost:8000/docs")
-    print(f"📖 Alternative Docs: http://localhost:8000/redoc")
-    print(f"🔍 OpenAPI Schema: http://localhost:8000/openapi.json")
+    """Initialize application on startup"""
+    try:
+        init_db()
+        logger.info("="*70)
+        logger.info(f"✅ {settings.APP_NAME} v{settings.APP_VERSION} started successfully!")
+        logger.info(f"🌐 Base URL: {settings.BASE_URL}")
+        logger.info(f"📚 API Documentation: {settings.BASE_URL}/docs")
+        logger.info(f"📖 Alternative Docs: {settings.BASE_URL}/redoc")
+        logger.info(f"🔍 OpenAPI Schema: {settings.BASE_URL}/openapi.json")
+        logger.info(f"📊 Health Check: {settings.BASE_URL}/health")
+        logger.info(f"📝 Logs Directory: {logs_dir.absolute()}")
+        logger.info("="*70)
+    except Exception as e:
+        logger.error(f"❌ Startup error: {e}", exc_info=True)
+        raise
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on application shutdown"""
+    logger.info("🛑 Application shutting down...")
+    # Add cleanup tasks here if needed
 
 
 @app.get("/", tags=["Root"], summary="API Information")
@@ -416,24 +563,26 @@ async def root():
         "message": "Welcome to Invoice Generator API! 🧾",
         "version": settings.APP_VERSION,
         "status": "operational",
+        "base_url": settings.BASE_URL,
         "documentation": {
-            "swagger": "/docs",
-            "redoc": "/redoc",
-            "openapi": "/openapi.json"
+            "swagger": f"{settings.BASE_URL}/docs",
+            "redoc": f"{settings.BASE_URL}/redoc",
+            "openapi": f"{settings.BASE_URL}/openapi.json"
         },
         "endpoints": {
-            "health": "/health",
-            "changelog": "/changelog",
-            "auth": "/auth/*",
-            "invoices": "/invoices/*",
-            "users": "/users/*"
+            "health": f"{settings.BASE_URL}/health",
+            "auth": f"{settings.BASE_URL}/auth/*",
+            "invoices": f"{settings.BASE_URL}/invoices/*",
+            "users": f"{settings.BASE_URL}/users/*"
         },
         "features": [
             "Bilingual PDF invoices (Arabic + English)",
             "Email sending with attachments",
             "QR code generation",
             "Multi-currency support",
-            "JWT authentication"
+            "JWT authentication",
+            "Security headers (HSTS, CSP, etc.)",
+            "Request/Error logging"
         ],
         "support": {
             "email": "support@yourdomain.com",
@@ -445,30 +594,85 @@ async def root():
 @app.get("/health", tags=["Health"], summary="Health Check")
 async def health_check():
     """
-    Health check endpoint for monitoring and load balancers
+    Comprehensive health check endpoint for monitoring and load balancers
     
     **No authentication required**
+    
+    Checks:
+    - API service status
+    - Database connectivity (real ping)
+    - File system access
     
     Returns:
     - Service status
     - API version  
     - Current timestamp
+    - Component health status
     
     **Use this endpoint for:**
     - Load balancer health checks
     - Uptime monitoring
     - Service availability verification
     
-    **Expected Response Time**: < 100ms
+    **Expected Response Time**: < 200ms
     """
-    return {
+    health_status = {
         "status": "healthy",
         "service": "invoice-generator-api",
         "version": settings.APP_VERSION,
         "timestamp": datetime.utcnow().isoformat(),
-        "database": "connected",
-        "email_service": "configured"
+        "checks": {}
     }
+    
+    # Check Database Connection
+    try:
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        db.close()
+        health_status["checks"]["database"] = {
+            "status": "healthy",
+            "message": "Database connection successful"
+        }
+    except Exception as e:
+        logger.error(f"❌ Database health check failed: {e}")
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["database"] = {
+            "status": "unhealthy",
+            "message": f"Database connection failed: {str(e)}"
+        }
+    
+    # Check File System
+    try:
+        test_file = Path(settings.UPLOAD_DIR) / ".health_check"
+        test_file.write_text("OK")
+        test_file.unlink()
+        health_status["checks"]["filesystem"] = {
+            "status": "healthy",
+            "message": "File system access successful"
+        }
+    except Exception as e:
+        logger.error(f"❌ Filesystem health check failed: {e}")
+        health_status["checks"]["filesystem"] = {
+            "status": "unhealthy",
+            "message": f"File system access failed: {str(e)}"
+        }
+    
+    # Check Email Configuration
+    if settings.SMTP_HOST and settings.SMTP_PORT:
+        health_status["checks"]["email"] = {
+            "status": "configured",
+            "message": f"Email service configured (SMTP: {settings.SMTP_HOST}:{settings.SMTP_PORT})"
+        }
+    else:
+        health_status["checks"]["email"] = {
+            "status": "not_configured",
+            "message": "Email service not configured"
+        }
+    
+    # Set appropriate HTTP status code
+    status_code = 200 if health_status["status"] == "healthy" else 503
+    
+    return JSONResponse(content=health_status, status_code=status_code)
 
 
 @app.get("/changelog", tags=["Root"], summary="API Changelog")
@@ -495,7 +699,11 @@ async def get_changelog():
                     "✅ QR code generation",
                     "✅ Multi-currency support (7 currencies)",
                     "✅ Complete CRUD operations",
-                    "✅ Rate limiting on emails"
+                    "✅ Rate limiting on emails",
+                    "✅ Security headers (HSTS, CSP, X-Frame-Options)",
+                    "✅ Comprehensive logging (file + console)",
+                    "✅ Real database health checks",
+                    "✅ Request/Response logging middleware"
                 ],
                 "breaking_changes": []
             }
@@ -504,10 +712,13 @@ async def get_changelog():
             "version": "1.1.0",
             "estimated_date": "2025-11-01",
             "planned_features": [
-                "📜 Payment gateway integration (Stripe)",
-                "📜 Webhook notifications",
-                "📜 Recurring invoices",
-                "📜 Invoice templates customization"
+                "🔜 Payment gateway integration (Stripe)",
+                "🔜 Webhook notifications",
+                "🔜 Recurring invoices",
+                "🔜 Invoice templates customization",
+                "🔜 Redis caching layer",
+                "🔜 API rate limiting (global)",
+                "🔜 Prometheus metrics endpoint"
             ]
         }
     }
@@ -519,5 +730,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG
+        reload=settings.DEBUG,
+        log_config=None  # Use our custom logging
     )
