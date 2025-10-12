@@ -1,8 +1,9 @@
 """
 Pydantic Schemas for Request/Response Validation
+Compatible with Pydantic v2
 """
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
@@ -32,13 +33,13 @@ class UserRegister(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     address: Optional[str] = Field(None, max_length=500)
     
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         """
         Validate password requirements:
         - Min 8 characters
         - Max 128 characters (to prevent abuse)
-        - Must contain at least one letter and one number (optional but recommended)
         """
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
@@ -54,15 +55,16 @@ class UserRegister(BaseModel):
         
         return v
     
-    @validator('username')
+    @field_validator('username')
+    @classmethod
     def validate_username(cls, v):
         """Validate username (alphanumeric and underscore only)"""
         if not v.replace('_', '').replace('-', '').isalnum():
             raise ValueError('Username can only contain letters, numbers, underscore, and hyphen')
         return v.lower()  # Store usernames in lowercase
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "email": "freelancer@example.com",
                 "username": "freelancer",
@@ -73,6 +75,7 @@ class UserRegister(BaseModel):
                 "address": "123 Street, Casablanca, Morocco"
             }
         }
+    }
 
 
 class UserLogin(BaseModel):
@@ -80,13 +83,14 @@ class UserLogin(BaseModel):
     username: str = Field(..., description="Username or email")
     password: str = Field(..., description="Password")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "username": "freelancer",
                 "password": "SecurePass123!"
             }
         }
+    }
 
 
 class UserUpdate(BaseModel):
@@ -96,8 +100,8 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     address: Optional[str] = Field(None, max_length=500)
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "full_name": "Ahmed Updated",
                 "company_name": "New Company LLC",
@@ -105,6 +109,7 @@ class UserUpdate(BaseModel):
                 "address": "456 New Street, Rabat, Morocco"
             }
         }
+    }
 
 
 class UserResponse(BaseModel):
@@ -112,17 +117,16 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
-    full_name: Optional[str]
-    company_name: Optional[str]
-    phone: Optional[str]
-    address: Optional[str]
-    payment_link: Optional[str]
+    full_name: Optional[str] = None
+    company_name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    payment_link: Optional[str] = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}  # ✅ Fixed: was orm_mode in v1
 
 
 class Token(BaseModel):
@@ -169,8 +173,8 @@ class InvoiceItemCreate(BaseModel):
     quantity: float = Field(..., gt=0, description="Quantity must be greater than 0")
     price: float = Field(..., ge=0, description="Price must be 0 or greater")
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "Web Development Service",
                 "description": "Full-stack e-commerce platform",
@@ -178,6 +182,7 @@ class InvoiceItemCreate(BaseModel):
                 "price": 15000.00
             }
         }
+    }
 
 
 class InvoiceItemResponse(InvoiceItemCreate):
@@ -186,8 +191,7 @@ class InvoiceItemResponse(InvoiceItemCreate):
     invoice_id: int
     total: float
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}  # ✅ Fixed: was orm_mode in v1
 
 
 class InvoiceCreate(BaseModel):
@@ -198,21 +202,22 @@ class InvoiceCreate(BaseModel):
     client_address: Optional[str] = Field(None, max_length=500)
     language: InvoiceLanguage = Field(default=InvoiceLanguage.ENGLISH)
     currency: InvoiceCurrency = Field(default=InvoiceCurrency.USD)
-    items: List[InvoiceItemCreate] = Field(..., min_items=1)
+    items: List[InvoiceItemCreate] = Field(..., min_length=1)
     tax_rate: float = Field(default=0, ge=0, le=100, description="Tax rate percentage (0-100)")
     discount_rate: float = Field(default=0, ge=0, le=100, description="Discount rate percentage (0-100)")
     due_date: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=2000)
     
-    @validator('items')
+    @field_validator('items')
+    @classmethod
     def validate_items(cls, v):
         """Ensure at least one item is provided"""
         if not v or len(v) == 0:
             raise ValueError('At least one item is required')
         return v
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "client_name": "ACME Corporation",
                 "client_email": "billing@acme.com",
@@ -234,6 +239,7 @@ class InvoiceCreate(BaseModel):
                 "notes": "شكراً لتعاملكم معنا"
             }
         }
+    }
 
 
 class InvoiceUpdate(BaseModel):
@@ -241,13 +247,14 @@ class InvoiceUpdate(BaseModel):
     status: Optional[InvoiceStatus] = None
     notes: Optional[str] = Field(None, max_length=2000)
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "status": "paid",
                 "notes": "Payment received via bank transfer"
             }
         }
+    }
 
 
 class InvoiceResponse(BaseModel):
@@ -257,8 +264,8 @@ class InvoiceResponse(BaseModel):
     user_id: int
     client_name: str
     client_email: str
-    client_phone: Optional[str]
-    client_address: Optional[str]
+    client_phone: Optional[str] = None
+    client_address: Optional[str] = None
     language: str
     currency: str
     subtotal: float
@@ -268,16 +275,15 @@ class InvoiceResponse(BaseModel):
     discount_amount: float
     total: float
     status: str
-    due_date: Optional[datetime]
-    notes: Optional[str]
-    pdf_path: Optional[str]
-    qr_code_path: Optional[str]
+    due_date: Optional[datetime] = None
+    notes: Optional[str] = None
+    pdf_path: Optional[str] = None
+    qr_code_path: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     items: List[InvoiceItemResponse] = []
     
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}  # ✅ Fixed: was orm_mode in v1
 
 
 class InvoiceListResponse(BaseModel):
@@ -296,12 +302,13 @@ class EmailInvoice(BaseModel):
         description="Custom message to include in email"
     )
     
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "message": "Thank you for your business! Please find your invoice attached."
             }
         }
+    }
 
 
 # ==========================================
