@@ -528,7 +528,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=int(os.getenv("PORT", 7860)),  # ✅ تغيير من 8000 لـ 7860
+        port=7860,  # ✅ تغيير من 8000 لـ 7860
         reload=settings.DEBUG,
         log_config=None
     )
