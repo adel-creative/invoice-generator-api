@@ -179,7 +179,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ## 📖 Additional Resources
 
 - **Full API Documentation**: See endpoints below
-- **Support Email**: adelzidoune@gmail.com
+- **Support Email**: support@yourdomain.com
 
 ---
 
@@ -196,7 +196,7 @@ app = FastAPI(
     summary="Professional Invoice Generator API",
     contact={
         "name": "Invoice Generator API Support Team",
-        "email": "adelzidoune@gmail.com",
+        "email": "support@yourdomain.com",
         "url": "https://yourdomain.com/contact"
     },
     license_info={
@@ -528,7 +528,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=int(os.getenv("PORT", 7860)),  # ✅ تغيير من 8000 لـ 7860
         reload=settings.DEBUG,
-        log_config=None  # Use our custom logging
+        log_config=None
     )
