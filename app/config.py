@@ -13,18 +13,19 @@ class Settings(BaseSettings):
     # Application Info
     APP_NAME: str = "Invoice Generator API"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = False
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
 
-    # Base URL (auto-detect or set manually)
+    # Base URL - Auto-detect from environment
     BASE_URL: str = os.getenv(
         "BASE_URL",
-        "https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app"
+        # HF auto-provides SPACE_HOST
+        os.getenv("SPACE_HOST", "http://localhost:7860")
     )
 
-    # Database
+    # Database - IMPORTANT: Use external PostgreSQL (Supabase)
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "sqlite:///./invoices.db"
+        "sqlite:///./invoices.db"  # Fallback for local dev only
     )
 
     # JWT Settings
@@ -33,7 +34,8 @@ class Settings(BaseSettings):
         "your-secret-key-change-in-production-min-32-chars"
     )
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
     # Email Settings (SMTP)
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -49,18 +51,15 @@ class Settings(BaseSettings):
     QR_DIR: str = "static/qr_codes"
 
     # CORS
-    ALLOWED_ORIGINS: str = os.getenv(
-        "ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:8000,https://screeching-tildi-adelzidoune-ca9a7151.koyeb.app"
-    )
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "*")
 
     # Rate Limiting
-    EMAIL_RATE_LIMIT: int = 5  # emails per hour per user
+    EMAIL_RATE_LIMIT: int = int(os.getenv("EMAIL_RATE_LIMIT", "5"))
 
     # Payment (for future use)
-    PAYMENT_GATEWAY_URL: Optional[str] = None
-    STRIPE_SECRET_KEY: Optional[str] = None
-    STRIPE_PUBLISHABLE_KEY: Optional[str] = None
+    PAYMENT_GATEWAY_URL: Optional[str] = os.getenv("PAYMENT_GATEWAY_URL")
+    STRIPE_SECRET_KEY: Optional[str] = os.getenv("STRIPE_SECRET_KEY")
+    STRIPE_PUBLISHABLE_KEY: Optional[str] = os.getenv("STRIPE_PUBLISHABLE_KEY")
 
     class Config:
         env_file = ".env"
